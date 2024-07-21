@@ -90,7 +90,7 @@ type EventInfo interface {
 	Function() string
 }
 type logFunc func(EventInfo)
-type logger struct {
+type Logger struct {
 	level     int
 	quiet     bool
 	useColor  bool
@@ -98,22 +98,22 @@ type logger struct {
 	mu        sync.Mutex
 }
 
-func NewLogger(level int, quiet bool) *logger {
-	return &logger{level, quiet, true, make([]logFunc, 0), sync.Mutex{}}
+func NewLogger(level int, quiet bool) *Logger {
+	return &Logger{level, quiet, true, make([]logFunc, 0), sync.Mutex{}}
 }
 
-func (l *logger) AddCallback(callback logFunc) {
+func (l *Logger) AddCallback(callback logFunc) {
 	l.mu.Lock()
 	l.callbacks = append(l.callbacks, callback)
 	l.mu.Unlock()
 }
 
-func (l *logger) SetUseColor(useColor bool) {
+func (l *Logger) SetUseColor(useColor bool) {
 	l.mu.Lock()
 	l.useColor = useColor
 	l.mu.Unlock()
 }
-func (l *logger) log(level int, format string, args ...interface{}) {
+func (l *Logger) log(level int, format string, args ...interface{}) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if level < l.level || l.quiet {
@@ -140,7 +140,7 @@ func (l *logger) log(level int, format string, args ...interface{}) {
 	}
 }
 
-func (l *logger) handleWithCallbacks(event *logEvent) {
+func (l *Logger) handleWithCallbacks(event *logEvent) {
 	info := &eventInfo{event}
 	for _, callback := range l.callbacks {
 		if l.useColor {
@@ -150,7 +150,7 @@ func (l *logger) handleWithCallbacks(event *logEvent) {
 		callback(info)
 	}
 }
-func (l *logger) printEvent(event *logEvent) {
+func (l *Logger) printEvent(event *logEvent) {
 	if l.useColor {
 		color.Set(colorForLevel(event.level))
 		defer color.Unset()
@@ -161,27 +161,27 @@ func (l *logger) printEvent(event *logEvent) {
 	fmt.Printf("%s %-5s %s:%d %s: %s\n", timestamp, levelStr, event.file, event.line, event.function, event.message)
 }
 
-func (l *logger) Trace(format string, args ...interface{}) {
+func (l *Logger) Trace(format string, args ...interface{}) {
 	l.log(TRACE, format, args...)
 }
 
-func (l *logger) Debug(format string, args ...interface{}) {
+func (l *Logger) Debug(format string, args ...interface{}) {
 	l.log(DEBUG, format, args...)
 }
 
-func (l *logger) Info(format string, args ...interface{}) {
+func (l *Logger) Info(format string, args ...interface{}) {
 	l.log(INFO, format, args...)
 }
 
-func (l *logger) Warn(format string, args ...interface{}) {
+func (l *Logger) Warn(format string, args ...interface{}) {
 	l.log(WARN, format, args...)
 }
 
-func (l *logger) Error(format string, args ...interface{}) {
+func (l *Logger) Error(format string, args ...interface{}) {
 	l.log(ERROR, format, args...)
 }
 
-func (l *logger) Fatal(format string, args ...interface{}) {
+func (l *Logger) Fatal(format string, args ...interface{}) {
 	l.log(FATAL, format, args...)
 	os.Exit(1)
 }
